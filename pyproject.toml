@@ -1,0 +1,25 @@
+[project]
+name = "docstrands"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Michael Milton", email = "michael.r.milton@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "docstring-parser>=0.16",
+]
+
+[project.scripts]
+docstrands = "docstrands:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "griffe>=1.5.5",
+    "pytest>=8.3.4",
+]
