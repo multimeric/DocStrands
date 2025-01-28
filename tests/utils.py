@@ -13,6 +13,9 @@ GRIFFE_STYLE_MAP: dict[DocstringStyle, griffe.DocstringStyle] = {
     "rest": "sphinx"
 }
 
+def strip_whitespace(string: str) -> str:
+    return string.replace("\n", "").replace(" ", "")
+
 class DocstringTester(ABC):
     style: DocstringStyle
 
@@ -21,6 +24,30 @@ class DocstringTester(ABC):
 
     @abstractmethod
     def has_parameter(self, name: str, description: str | None = None) -> bool:
+        """
+        Checks if the docstring has a parameter with the given name and (optionally) description.
+        """
+        pass
+
+    @abstractmethod
+    def has_returns(self, returns: str) -> bool:
+        """
+        Checks if the docstring has a return value with the given description.
+        """
+        pass
+
+    @abstractmethod
+    def has_synopsis(self, synopsis: str) -> bool:
+        """
+        Checks if the docstring has a given synopsis.
+        """
+        pass
+
+    @abstractmethod
+    def has_description(self, description: str) -> bool:
+        """
+        Checks if the docstring has a given description.
+        """
         pass
 
 class StringTesterMixin:
@@ -31,6 +58,20 @@ class StringTesterMixin:
             return f"{name}:" in self.doc
         else:
             return f"{name}: {description}" in self.doc
+    
+    def has_returns(self, returns: str) -> bool:
+        return "Returns" in self.doc and returns in self.doc
+
+    def has_synopsis(self, synopsis: str) -> bool:
+        return synopsis in self.doc
+
+    def has_description(self, description: str) -> bool:
+        # We need to split the description into lines because the pydoc help system
+        # adds indentation
+        for line in description.split("\n"):
+            if line not in self.doc:
+                return False
+        return True
 
 class DocTester(StringTesterMixin, DocstringTester):
     """
@@ -73,6 +114,15 @@ class DocstringParserTester(DocstringTester):
                     return param.description == description
         return False
 
+    def has_returns(self, returns: str) -> bool:
+        return self.doc.returns is not None and self.doc.returns.description is not None and returns in self.doc.returns.description
+    
+    def has_synopsis(self, synopsis: str) -> bool:
+        return self.doc.short_description == synopsis
+
+    def has_description(self, description: str) -> bool:
+        return self.doc.long_description == description
+
 class GriffeTester(DocstringTester):
     """
     Uses the Griffe library to parse and test docstrings
@@ -95,5 +145,27 @@ class GriffeTester(DocstringTester):
                         else:
                             return param.description == description
         return False
+
+    def has_returns(self, returns: str) -> bool:
+        for section in self.doc.parsed:
+            if isinstance(section, griffe.DocstringSectionReturns):
+                for line in section.value:
+                    if line.description == returns:
+                        return True
+        return False
+
+    def has_synopsis(self, synopsis: str) -> bool:
+        for section in self.doc.parsed:
+            if isinstance(section, griffe.DocstringSectionText):
+                # Griffe does not separate the synopsis from the description
+                return synopsis in section.value
+        return False    
+
+    def has_description(self, description: str) -> bool:
+        for section in self.doc.parsed:
+            if isinstance(section, griffe.DocstringSectionText):
+                return description in section.value
+        return False
+        
 
 each_tester = pytest.mark.parametrize("Tester", [DocTester, HelpTester, DocstringParserTester, GriffeTester])

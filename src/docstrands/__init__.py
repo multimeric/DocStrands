@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Literal, ParamSpec, Protocol, TypeVar, Any, Generic, Self
-from docstring_parser import parse, DocstringStyle as StyleEnum, Docstring, compose
+from docstring_parser import parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
 from copy import copy
 
 AnyFunc = Callable[..., Any]
@@ -37,6 +37,11 @@ class ParsedFunc(Generic[P, R]):
     func: AnyFunc
     docstring: Docstring
 
+    def __post_init__(self) -> None:
+        # These need to be true for Griffe to parse the docstring correctly
+        self.docstring.blank_after_long_description = True
+        self.docstring.blank_after_short_description = True
+
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         return self.func(*args, **kwargs)
 
@@ -45,7 +50,7 @@ class ParsedFunc(Generic[P, R]):
         if self.docstring.style is None:
             return self.func.__doc__
         else:
-            return compose(self.docstring, self.docstring.style)
+            return compose(self.docstring, self.docstring.style, rendering_style=RenderingStyle.CLEAN)
 
     def copy_params(self, *params: str) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
@@ -65,6 +70,54 @@ class ParsedFunc(Generic[P, R]):
             )
         return decorator
 
+    def copy_returns(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
+        """
+        Copies the return documentation from this function to the decorated function.
+        """
+        def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
+            new_docstring = copy(other.docstring)
+            if self.docstring.returns is None:
+                raise ValueError("No return documentation to copy.")
+            # Remove any existing return documentation
+            new_docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), new_docstring.meta))
+            # Add the new return documentation
+            new_docstring.meta.append(self.docstring.returns)
+            return ParsedFunc(
+                other.func,
+                new_docstring,
+            )
+        return decorator
+
+    def copy_synopsis(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
+        """
+        Copies the synopsis (first line) from this function to the decorated function.
+        """
+        def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
+            new_docstring = copy(other.docstring)
+            if self.docstring.short_description is None:
+                raise ValueError("No synopsis to copy.")
+            new_docstring.short_description = self.docstring.short_description
+            return ParsedFunc(
+                other.func,
+                new_docstring,
+            )
+        return decorator
+
+    def copy_description(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
+        """
+        Copies the description (everything after the synopsis that isn't in a dedicated block) from this function to the decorated function.
+        """
+        def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
+            new_docstring = copy(other.docstring)
+            if self.docstring.long_description is None:
+                raise ValueError("No description to copy.")
+            new_docstring.long_description = self.docstring.long_description
+            return ParsedFunc(
+                other.func,
+                new_docstring,
+            )
+        return decorator
+
 
 def docstring(style: DocstringStyle) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
     def decorator(func: Callable[P, R]) -> ParsedFunc[P, R]:
@@ -72,10 +125,3 @@ def docstring(style: DocstringStyle) -> Callable[[Callable[P, R]], ParsedFunc[P,
         return ParsedFunc(func, parse(func.__doc__ or "", STYLE_MAP[style]))
     return decorator
 
-def copy_params(source: AnyFunc, params: list[str], style: DocstringStyle) -> Callable[[T], T]:
-    parsed_source = parse(source.__doc__ or "", style)
-    def decorator(func: T) -> T:
-        parsed = parse(func.__doc__ or "", style)
-        parsed.params.append
-        return func
-    return decorator
