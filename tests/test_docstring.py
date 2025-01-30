@@ -1,6 +1,6 @@
 from io import StringIO
 from typing import Type
-from docstrands import docstring
+from docstrands.parsed_func import docstring
 from pydoc import render_doc, Helper
 import pytest
 from utils import each_tester, DocTester

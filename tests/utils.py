@@ -3,7 +3,7 @@ from io import StringIO
 from pydoc import Helper
 
 import docstring_parser
-from docstrands import DocstringStyle, STYLE_MAP
+from docstrands.parsed_func import DocstringStyle, STYLE_MAP
 import pytest
 import griffe
 
