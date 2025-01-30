@@ -1,5 +1,3 @@
----
----
 # DocStrands
 
 When documenting your functions, you might find yourself documenting the same parameters over and over again.
@@ -7,8 +5,8 @@ DocStrands provides a framework for re-using docstring information.
 
 ## Example
 
-Consider the following snippet from a hypothetical HTTP library.
-We annotate both source and destination functions with `@docstring`, and then copy docstring components using methods such as `.copy_params()`:
+Imagine you're writing an HTTP library.
+You start with a `get` function, but add the `@docstring` decorator to tell DocStrands that it function uses Google-style docstrings.
 
 ```{python}
 from docstrands import docstring
@@ -26,7 +24,13 @@ def get(url: str, headers: dict[str, str], params: dict[str, str]) -> str:
     Returns:
         The raw HTTP response body as a string.
     """
+```
 
+Next, you want to write a corresponding `post` function.
+The annoying thing is that many of these parameters are exactly the same as on our `get` function.
+Here DocStrands solves this by copying the repeated documentation using `@get.copy_*` functions:
+
+```{python}
 @get.copy_params("url", "headers")
 @get.copy_returns()
 @docstring("google")
@@ -39,7 +43,7 @@ def post(url: str, headers: dict[str, str], body: bytes) -> str:
     """
 ```
 
-We can check that Python understands this by calling `help`:
+Finally, you can call `help` to prove this worked correctly:
 ```{python}
 help(post)
 ```
@@ -53,6 +57,6 @@ We could choose to not use DocStrands at all, but then `post` would have an inco
 We could also copy the entire docstring from `Weapon` and add it to `Wand` with the extra `element` parameter, but then we would have to keep both docstrings in sync.
 
 Finally, it is possible to link between docstrings using cross references (e.g. in [Sphinx](https://www.sphinx-doc.org/en/master/usage/referencing.html) or [`mkdocstrings`](https://mkdocstrings.github.io/usage/#cross-references)).
-However, this only shows up in your final HTML documentation: standard Python functions like `help()` don't understand this.
-Also, it can be frustrating to read documentation that sends you to several other pages just to understand one function.
+Firstly, this only shows up in your final HTML documentation: standard Python functions like `help()` don't understand this.
+Secondly, it can be frustrating to read documentation that sends you to several other pages just to understand one function.
 In contrast, DocStrands keeps everything all in one place.
