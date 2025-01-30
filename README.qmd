@@ -7,58 +7,48 @@ DocStrands provides a framework for re-using docstring information.
 
 ## Example
 
-Consider the following snippet from a hypothetical role playing video game.
+Consider the following snippet from a hypothetical HTTP library.
 We annotate both source and destination functions with `@docstring`, and then copy docstring components using methods such as `.copy_params()`:
 
 ```{python}
 from docstrands import docstring
 
-class Weapon:
-    @docstring("google")
-    def calculate_damage(self, monster: str, critical_chance: float) -> int:
-        """
-        Calculates the damage this weapon deals.
+@docstring("google")
+def get(url: str, headers: dict[str, str], params: dict[str, str]) -> str:
+    """
+    Makes an HTTP GET request
 
-        Args:
-            monster: The monster being attacked. Its weaknesses will be factored into the calculation.
-            critical_chance: Probability of a critical hit. Derived from player traits.
+    Params:
+        url: Path to the resource to request
+        headers: Dictionary of HTTP headers. Keys will be automatically capitalised.
+        params: Dictionary of query parameters which will be URL encoded.
 
-        Returns:
-            The amount of HP (hit points) the monster will lose
-        """
-        pass
+    Returns:
+        The raw HTTP response body as a string.
+    """
 
-type Element = Literal["earth", "air", "fire", "water"]
+@get.copy_params("url", "headers")
+@get.copy_returns()
+@docstring("google")
+def post(url: str, headers: dict[str, str], body: bytes) -> str:
+    """
+    Makes an HTTP POST request.
 
-class Wand(Weapon):
-    @Weapon.calculate_damage.copy_synopsis()
-    @Weapon.calculate_damage.copy_params("monster", "critical_chance")
-    @Weapon.calculate_damage.copy_returns()
-    @docstring("google")
-    def calculate_damage(self, monster: str, critical_chance: float, element: str) -> float:
-        """
-        Args:
-            element: Name of the element used in the attack. If the monster is weak to that element, the attack will do bonus damage.
-        """
+    Params:
+        body: POST body. Text such as JSON will have to be encoded beforehand.
+    """
 ```
+
+We can check that Python understands this by calling `help`:
 ```{python}
-help(Wand.calculate_damage)
+help(post)
 ```
 
 ## Alternatives
 
 There are other solutions to this problem.
 
-We could choose to not use DocStrands at all, but then `Wand.calculate_damage` would have an incomplete docstring:
-```{python}
-class Wand(Weapon):
-    def calculate_damage(self, monster: str, critical_chance: float, element: str) -> float:
-        """
-        Args:
-            element: The element used in the attack. If the monster is weak to that element, the attack will do bonus damage.
-        """
-help(Wand.calculate_damage)
-```
+We could choose to not use DocStrands at all, but then `post` would have an incomplete docstring:
 
 We could also copy the entire docstring from `Weapon` and add it to `Wand` with the extra `element` parameter, but then we would have to keep both docstrings in sync.
 
