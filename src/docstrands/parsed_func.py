@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Annotated, Callable, Literal, ParamSpec, Protocol, TypeVar, Any, Generic, Self, get_args, get_origin, get_type_hints
 from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
 from copy import copy
@@ -31,9 +31,11 @@ class ParsedFunc(Generic[P, R]):
     docstring: Docstring
 
     def __repr__(self) -> str:
+        # This shows up in the help, where we want it to impersonate the original function
         return repr(self.func)
     
     def __str__(self) -> str:
+        # This shows up in the help, where we want it to impersonate the original function
         return str(self.func)
 
     def __post_init__(self) -> None:
@@ -42,6 +44,7 @@ class ParsedFunc(Generic[P, R]):
         self.docstring.blank_after_short_description = True
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+        # Calling this wrapper should behave like the original function
         return self.func(*args, **kwargs)
 
     @property
@@ -50,6 +53,16 @@ class ParsedFunc(Generic[P, R]):
             return self.func.__doc__
         else:
             return compose(self.docstring, self.docstring.style, rendering_style=RenderingStyle.CLEAN)
+
+    # def _replace_docstring(self, other: Docstring, params: list[DocstringParam] | None = None, returns: DocstringReturns | None = None) -> ParsedFunc[P, R]:
+    #     new_docstring = copy(other)
+    #     for meta in self.docstring.meta:
+    #         if  param.arg_name in params:
+    #             new_docstring.meta.append(param)
+    #     return replace(
+    #         other,
+    #         docstring=new_docstring
+    #     )
 
     def copy_params(self, *params: str) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
@@ -63,9 +76,9 @@ class ParsedFunc(Generic[P, R]):
             for param in self.docstring.params:
                 if param.arg_name in params:
                     new_docstring.meta.append(param)
-            return ParsedFunc(
-                other.func,
-                new_docstring,
+            return replace(
+                other,
+                docstring=new_docstring
             )
         return decorator
 
@@ -125,13 +138,13 @@ class ParsedFunc(Generic[P, R]):
             if ret_description is not None:
                 # Remove any existing return documentation
                 self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
-                self.docstring.meta.append(DocstringReturns(args=[], description=ret_description, type_name=None, return_name=None, is_generator=False))
+                # args=["returns"] seems to be used by all DocstringReturns
+                self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=None, return_name=None, is_generator=False))
         for param_name, param_type in signature.items():
             param_description = extract_description(param_type)
             if param_description is not None:
-                # TODO: remove existing param documentation
-                # TODO: refactor this parameter manipulation into a helper function
-                self.docstring.meta.append(DocstringParam(args=[], type_name=None, arg_name=param_name, description=param_description, is_optional=False, default=None))
+                # args=["param", param_name] seems to be used by all DocstringParam
+                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=None, arg_name=param_name, description=param_description, is_optional=False, default=None))
 
 
 @dataclass
