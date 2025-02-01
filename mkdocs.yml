@@ -1,7 +1,5 @@
 site_name: DocStrands
 
-docs_dir: .
-
 nav:
   - Guide: README.md
   - API: api.md
@@ -9,7 +7,6 @@ nav:
 
 plugins:
   - search
-  - same-dir
   - mkdocstrings:
      handlers:
       python:
