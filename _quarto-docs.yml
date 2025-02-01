@@ -1,0 +1,5 @@
+project:
+  output-dir: docs
+format:
+  gfm:
+    variant: +yaml_metadata_block
