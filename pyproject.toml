@@ -1,7 +1,7 @@
 [project]
 name = "docstrands"
 version = "0.1.0"
-description = "Add your description here"
+description = "Re-use segments of your docstrings"
 readme = "README.md"
 authors = [
     { name = "Michael Milton", email = "michael.r.milton@gmail.com" }
