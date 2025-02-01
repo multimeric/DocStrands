@@ -1,3 +1,10 @@
+---
+format:
+  gfm:
+    variant: +yaml_metadata_block    
+hide:
+  - navigation   
+---
 # DocStrands
 
 When documenting your functions, you might find yourself documenting the same parameters over and over again.

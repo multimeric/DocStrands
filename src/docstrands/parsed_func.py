@@ -25,10 +25,15 @@ STYLE_MAP: dict[DocstringStyle, StyleEnum] = {
 @dataclass
 class ParsedFunc(Generic[P, R]):
     """
-    Wraps a function with its parsed docstring.
+    Contains a function and its parsed docstring, allowing the docstring to be manipulated.
+
+    In general `ParsedFunc` impersonates the original function, so it can be used in most places where the original function would be used.
+    A `ParsedFunc` should only ever be created by the `docstring` decorator.
     """
     func: AnyFunc
+    "The original function."
     docstring: Docstring
+    "The parsed docstring."
 
     def __repr__(self) -> str:
         # This shows up in the help, where we want it to impersonate the original function
@@ -53,16 +58,6 @@ class ParsedFunc(Generic[P, R]):
             return self.func.__doc__
         else:
             return compose(self.docstring, self.docstring.style, rendering_style=RenderingStyle.CLEAN)
-
-    # def _replace_docstring(self, other: Docstring, params: list[DocstringParam] | None = None, returns: DocstringReturns | None = None) -> ParsedFunc[P, R]:
-    #     new_docstring = copy(other)
-    #     for meta in self.docstring.meta:
-    #         if  param.arg_name in params:
-    #             new_docstring.meta.append(param)
-    #     return replace(
-    #         other,
-    #         docstring=new_docstring
-    #     )
 
     def copy_params(self, *params: str) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
@@ -149,6 +144,9 @@ class ParsedFunc(Generic[P, R]):
 
 @dataclass
 class Description:
+    """
+    Allows a description to be attached to any type annotation.
+    """
     description: str
 
 def extract_description(typ: Any) -> str | None:
@@ -158,6 +156,16 @@ def extract_description(typ: Any) -> str | None:
                 return annotation.description
 
 def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
+    """
+    Parses the docstring of a function so that it can be manipulated.
+
+    Params:
+        style: The style of docstring to parse. One of "rest", "google", "numpydoc" or "epydoc"
+        use_annotations: Whether to apply annotations from the function signature.
+
+    Returns:
+        A decorator. When this is applied to a function this decorator will return a [`ParsedFunc`][docstrands.ParsedFunc] object.
+    """
     def decorator(func: Callable[P, R]) -> ParsedFunc[P, R]:
         ret: ParsedFunc[P, R] = ParsedFunc(func, parse(func.__doc__ or "", STYLE_MAP[style]))
         if use_annotations:
