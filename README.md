@@ -168,9 +168,9 @@ There are other solutions to this problem.
 We could choose to not use DocStrands at all, but then `post` would have
 an incomplete docstring:
 
-We could also copy the entire docstring from `Weapon` and add it to
-`Wand` with the extra `element` parameter, but then we would have to
-keep both docstrings in sync.
+We could also copy the entire docstring from `get` and add it to `post`
+along with the extra `body` parameter, but then we would have to keep
+both docstrings in sync.
 
 Finally, it is possible to link between docstrings using cross
 references (e.g. in
