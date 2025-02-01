@@ -145,6 +145,7 @@ help(post)
 You can even re-use the same types as parameters and return values:
 
 ``` python
+@docstring("google")
 def make_accept_headers() -> Headers:
     """
     Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client
@@ -153,10 +154,13 @@ def make_accept_headers() -> Headers:
 help(make_accept_headers)
 ```
 
-    Help on function make_accept_headers in module __main__:
+    Help on ParsedFunc in module docstrands.parsed_func:
 
-    make_accept_headers() -> Annotated[dict[str, str], Description(description='Dictionary of HTTP headers. Keys will be automatically capitalised.')]
+    <function make_accept_headers>
         Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client
+
+        Returns:
+            : Dictionary of HTTP headers. Keys will be automatically capitalised.
 
 ## Alternatives
 

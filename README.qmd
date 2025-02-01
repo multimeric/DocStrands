@@ -101,6 +101,7 @@ help(post)
 You can even re-use the same types as parameters and return values:
 
 ```{python}
+@docstring("google")
 def make_accept_headers() -> Headers:
     """
     Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client
