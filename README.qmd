@@ -1,11 +1,12 @@
 ---
-format:
-  gfm:
-    variant: +yaml_metadata_block    
 hide:
   - navigation   
 ---
 # DocStrands
+
+::: {.content-visible when-profile="readme"}
+**[Read the full documentation here](https://multimeric.github.io/DocStrands)**
+:::
 
 When documenting your functions, you might find yourself documenting the same parameters over and over again.
 DocStrands provides a framework for re-using docstring information.
