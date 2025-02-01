@@ -1,25 +1,6 @@
-from io import StringIO
 from typing import Type
 from docstrands.parsed_func import docstring
-from pydoc import render_doc, Helper
-import pytest
 from utils import each_tester, DocTester
-
-@pytest.fixture
-def help() -> Helper:
-    """
-    Exactly the same as the built-in help() function, but captures the output for testing.
-    """
-    return Helper(output=StringIO())
-
-@pytest.fixture
-def help_output(help: Helper) -> StringIO:
-    """
-    Returns the output of the help() function.
-    """
-    assert isinstance(help.output, StringIO)
-    return help.output
-
 
 @docstring(style="google")
 def divide(a: int, b: int, *, floor: bool) -> float:
