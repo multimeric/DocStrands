@@ -48,6 +48,59 @@ Finally, you can call `help` to prove this worked correctly:
 help(post)
 ```
 
+## Type Annotations
+
+DocStrands supports another approach to re-using documentation: attaching it to types.
+The above example represents a common case where both functions shared the same return documentation and return type, so we can encode this using Python's type system:
+
+```{python}
+from typing import Annotated
+from docstrands import Description
+
+HttpResponse = Annotated[str, Description("The raw HTTP response body as a string.")]
+Url = Annotated[str, Description("Path to the resource to request")]
+Headers = Annotated[dict[str, str], Description("Dictionary of HTTP headers. Keys will be automatically capitalised.")]
+Params = Annotated[dict[str, str], Description("Dictionary of query parameters which will be URL encoded.")]
+```
+
+Then apply them to our new function.
+Note that we still need to define the function description, and we still need to use the `@docstring` decorator:
+
+```{python}
+@docstring("google")
+def get(url: Url, headers: Headers, params: Params) -> HttpResponse:
+    """
+    Makes an HTTP POST request.
+    """
+
+help(get)
+```
+
+Of course, we can then re-use these parameters with `post`:
+
+```{python}
+Body = Annotated[bytes, Description("POST body. Text such as JSON will have to be encoded beforehand.")]
+
+@docstring("google")
+def post(url: Url, headers: Headers, body: Body) -> HttpResponse:
+    """
+    Makes an HTTP POST request.
+    """
+
+help(post)
+```
+
+You can even re-use the same types as parameters and return values:
+
+```{python}
+def make_accept_headers() -> Headers:
+    """
+    Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client
+    """
+
+help(make_accept_headers)
+```
+
 ## Alternatives
 
 There are other solutions to this problem.
