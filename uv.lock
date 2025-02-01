@@ -266,6 +266,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "docstring-parser" },
+    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -282,7 +283,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "docstring-parser", specifier = ">=0.16" }]
+requires-dist = [
+    { name = "docstring-parser", specifier = ">=0.16" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
+]
 
 [package.metadata.requires-dev]
 dev = [

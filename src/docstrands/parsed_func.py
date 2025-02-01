@@ -1,9 +1,18 @@
 from __future__ import annotations
 from dataclasses import dataclass, replace
-from typing import Annotated, Callable, Literal, ParamSpec, Protocol, TypeVar, Any, Generic, Self, get_args, get_origin, get_type_hints
+from typing import Annotated, Callable, Literal, Any, Generic, TypeVar, get_args, get_origin, get_type_hints
+from typing_extensions import ParamSpec
 from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
 from copy import copy
-from docstrands.types import AnyFunc, S, R, P, Q
+
+AnyFunc = Callable[..., Any]
+T = TypeVar("T", bound=AnyFunc)
+
+P = ParamSpec("P")
+Q = ParamSpec("Q")
+
+R = TypeVar("R")
+S = TypeVar("S")
 
 DocstringStyle = Literal[
     "rest",
