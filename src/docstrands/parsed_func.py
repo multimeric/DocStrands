@@ -160,7 +160,7 @@ def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[
     Parses the docstring of a function so that it can be manipulated.
 
     Params:
-        style: The style of docstring to parse. One of "rest", "google", "numpydoc" or "epydoc"
+        style: The style of docstring to parse. One of "rest" (aka Sphinx), "google", "numpydoc" or "epydoc".
         use_annotations: Whether to apply annotations from the function signature.
 
     Returns:
