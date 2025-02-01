@@ -1,0 +1,34 @@
+site_name: DocStrands
+
+docs_dir: .
+
+nav:
+  - Guide: README.md
+  - API: api.md
+  - GitHub: https://github.com/multimeric/DocStrands
+
+plugins:
+  - search
+  - same-dir
+  - mkdocstrings:
+     handlers:
+      python:
+        options:
+          show_bases: false
+          show_source: false
+          heading_level: 2
+          show_root_heading: true
+
+theme:
+  name: material
+  features:
+  - navigation.tabs
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
