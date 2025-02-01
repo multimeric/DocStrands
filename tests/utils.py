@@ -55,9 +55,9 @@ class StringTesterMixin:
 
     def has_parameter(self, name: str, description: str | None = None) -> bool:
         if description is None:
-            return f"{name}:" in self.doc
+            return f"    {name}:" in self.doc
         else:
-            return f"{name}: {description}" in self.doc
+            return f"    {name}: {description}" in self.doc
     
     def has_returns(self, returns: str) -> bool:
         return "Returns" in self.doc and returns in self.doc

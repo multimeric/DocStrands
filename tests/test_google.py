@@ -1,6 +1,6 @@
 from typing import Type
 from docstrands.parsed_func import docstring
-from utils import each_tester, DocTester
+from tests.utils import each_tester, DocTester
 
 @docstring(style="google")
 def divide(a: int, b: int, *, floor: bool) -> float:
