@@ -562,25 +562,29 @@ decorator:</p>
         : The raw HTTP response body as a string.
 </code></pre></div>
 <p>You can even re-use the same types as parameters and return values:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_accept_headers</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Headers</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="sd">    Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">help</span><span class="p">(</span><span class="n">make_accept_headers</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@docstring</span><span class="p">(</span><span class="s2">&quot;google&quot;</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">make_accept_headers</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Headers</span><span class="p">:</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="sd">    Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">help</span><span class="p">(</span><span class="n">make_accept_headers</span><span class="p">)</span>
 </span></code></pre></div>
-<div class="language-text highlight"><pre><span></span><code>Help on function make_accept_headers in module __main__:
+<div class="language-text highlight"><pre><span></span><code>Help on ParsedFunc in module docstrands.parsed_func:
 
-make_accept_headers() -&gt; Annotated[dict[str, str], Description(description=&#39;Dictionary of HTTP headers. Keys will be automatically capitalised.&#39;)]
+&lt;function make_accept_headers&gt;
     Calculates the the `Accept`, `Accept-Encoding` and `Accept-Language` headers based on the capacity of the HTTP client
+
+    Returns:
+        : Dictionary of HTTP headers. Keys will be automatically capitalised.
 </code></pre></div>
 <h2 id="alternatives">Alternatives</h2>
 <p>There are other solutions to this problem.</p>
 <p>We could choose to not use DocStrands at all, but then <code>post</code> would have
 an incomplete docstring:</p>
-<p>We could also copy the entire docstring from <code>Weapon</code> and add it to
-<code>Wand</code> with the extra <code>element</code> parameter, but then we would have to
-keep both docstrings in sync.</p>
+<p>We could also copy the entire docstring from <code>get</code> and add it to <code>post</code>
+along with the extra <code>body</code> parameter, but then we would have to keep
+both docstrings in sync.</p>
 <p>Finally, it is possible to link between docstrings using cross
 references (e.g. in
 <a href="https://www.sphinx-doc.org/en/master/usage/referencing.html">Sphinx</a> or
