@@ -10,6 +10,12 @@ When documenting your functions, you might find yourself documenting the
 same parameters over and over again. DocStrands provides a framework for
 re-using docstring information.
 
+## Installation
+
+``` bash
+pip install docstrands
+```
+
 ## Example
 
 Imagine you’re writing an HTTP library. You start with a `get` function,
