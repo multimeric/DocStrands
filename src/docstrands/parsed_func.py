@@ -165,7 +165,16 @@ def extract_description(typ: Any) -> str | None:
                 return annotation.description
 
 def extract_typename(type: Any) -> str:
-    return type.__origin__.__name__
+    """
+    Strips out any annotations, and returns the name of the type as a string
+    """
+    if get_origin(type) == Annotated:
+        # Strip away annotations
+        type = get_args(type)[0]
+    if hasattr(type, "__name__"):
+        return type.__name__
+    else:
+        return str(type)
 
 
 def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
