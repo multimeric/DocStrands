@@ -5,7 +5,7 @@ from typing_extensions import ParamSpec
 from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
 from copy import copy
 
-from docstrands.annotations import Description
+from docstrands.annotations import Description, TypeDescription
 
 AnyFunc = Callable[..., Any]
 T = TypeVar("T", bound=AnyFunc)
@@ -32,6 +32,20 @@ STYLE_MAP: dict[DocstringStyle, StyleEnum] = {
     "epydoc": StyleEnum.EPYDOC,
     "auto": StyleEnum.AUTO,
 }
+
+def get_param(doc: Docstring, param_name: str) -> DocstringParam | None:
+    """
+    Returns an existing parameter definition
+    """
+    for param in doc.params:
+        if param_name == param.arg_name:
+            return param
+
+def delete_param(doc: Docstring, param_name: str):
+    """
+    Deletes any parameters with the given name
+    """
+    doc.meta = [meta for meta in doc.meta if not (isinstance(meta, DocstringParam) and meta.arg_name == param_name)]
 
 @dataclass
 class ParsedFunc(Generic[P, R]):
@@ -81,6 +95,8 @@ class ParsedFunc(Generic[P, R]):
             new_docstring = copy(other.docstring)
             for param in self.docstring.params:
                 if param.arg_name in params:
+                    # Delete any existing parameter descriptions with this name
+                    delete_param(new_docstring, param.arg_name)
                     new_docstring.meta.append(param)
             return replace(
                 other,
@@ -152,9 +168,22 @@ class ParsedFunc(Generic[P, R]):
                 self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
         for param_name, param_type in signature.items():
             param_description = extract_description(param_type)
-            if param_description is not None:
-                # args=["param", param_name] seems to be used by all DocstringParam
-                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=extract_typename(param_type), arg_name=param_name, description=param_description, is_optional=False, default=None))
+            type_name = extract_typename(param_type)
+
+            # The parameter we are describing via annotations might already exist in the docstring
+            if (existing_param := get_param(self.docstring, param_name)) is None:
+                # If it doesn't exist, we create a new one
+                # args=["param", param_name] seems to the correct args for DocstringParam
+                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=type_name, arg_name=param_name, description=param_description, is_optional=False, default=None))
+            else:
+                # Update the type only if we had no existing description for it, 
+                # because what we `type_name` is not guaranteed to be informative
+                if existing_param.type_name is None:
+                    existing_param.type_name = type_name
+                # Update the description if we find any Description,
+                # this is likely to be more informative
+                if param_description is not None:
+                    existing_param.description = param_description
 
 
 def extract_description(typ: Any) -> str | None:
@@ -168,6 +197,9 @@ def extract_typename(type: Any) -> str:
     Strips out any annotations, and returns the name of the type as a string
     """
     if get_origin(type) == Annotated:
+        for annotation in get_args(type):
+            if isinstance(annotation, TypeDescription):
+                return annotation.description
         # Strip away annotations
         type = get_args(type)[0]
     return getattr(type, "__name__", str(type))

@@ -2,6 +2,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from io import StringIO
 from pydoc import Helper
+import sys
+import re
 
 import docstring_parser
 from docstrands.parsed_func import DocstringStyle, STYLE_MAP
@@ -13,6 +15,8 @@ GRIFFE_STYLE_MAP: dict[DocstringStyle, griffe.DocstringStyle] = {
     "numpydoc": "numpy",
     "rest": "sphinx"
 }
+
+at_least_310 = pytest.mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 
 def strip_whitespace(string: str) -> str:
     return string.replace("\n", "").replace(" ", "")
@@ -55,13 +59,22 @@ class StringTesterMixin:
     # Note: currently assumes that all docstrings are Google style
     doc: str
 
+    def _doc_contains(self, text: str) -> bool:
+        """
+        Checks if a given string is contained within the docstring, with \\b boundary delimiters
+        """
+        return re.search(f"\\b{text}\\b", self.doc) is not None
+
     def has_parameter(self, name: str, description: str | None = None, type: str | None = None) -> bool:
-        if description is None:
-            return f"    {name}:" in self.doc
-        elif type is None:
-            return f"    {name}: {description}" in self.doc
-        else:
-            return f"    {name} ({type}): {description}" in self.doc
+        # These tests are a bit loose, but the other tester subclasses do a more precise job
+        if description is not None and description not in self.doc:
+            # Missing param description
+            return False
+        if type is not None and type not in self.doc:
+            # Missing type description
+            return False
+        # Only use the word boundary test for the parameter name, since e.g. `"a" in self.doc` is very likely to return True
+        return self._doc_contains(name)
     
     def has_returns(self, returns: str, type: str | None = None) -> bool:
         return "Returns" in self.doc and returns in self.doc and (type is None or type in self.doc)
