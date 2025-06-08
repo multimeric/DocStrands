@@ -3,13 +3,13 @@ from typing import Annotated, Type
 from docstrands import Description, docstring
 from tests.utils import DocTester, each_tester
 
-AnnotatedReturn = Annotated[str, Description("The return value.")]
-AnnotatedParam = Annotated[int, Description("An int parameter.")]
-UnionParam = Annotated[int | float, Description("An int or float parameter.")]
-DoubleAnnotatedParam = Annotated[Annotated[float, Description("A float parameter.")], "foo"]
-
 @docstring(style="google", use_annotations=True)
-def add(a: AnnotatedParam, b: DoubleAnnotatedParam, c: UnionParam, d: "Annotated[int | None, Description('String union.')]") -> AnnotatedReturn:
+def add(
+    a: Annotated[int, Description("An int parameter.")],
+    b: Annotated[Annotated[float, Description("A float parameter.")], "foo"],
+    c: Annotated[int | float, Description("An int or float parameter.")],
+    d: "Annotated[int | None, Description('String union.')]"
+) -> Annotated[str, Description("The return value.")]:
     ...
 
 @each_tester
