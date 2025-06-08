@@ -139,7 +139,7 @@ class ParsedFunc(Generic[P, R]):
             signature = get_type_hints(self.func, include_extras=True)
             # TODO: Use self.func.__annotations__ to parse out the type without evaluating it
         except TypeError as e:
-            raise Exception(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
+            raise TypeError(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
         ret_type = signature.pop("return", None)
         if ret_type is not None:
             ret_description = extract_description(ret_type)
