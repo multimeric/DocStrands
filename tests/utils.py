@@ -59,7 +59,7 @@ class StringTesterMixin:
     # Note: currently assumes that all docstrings are Google style
     doc: str
 
-    def _doc_contains(self, text: str) -> bool:
+    def _doc_bounded_contains(self, text: str) -> bool:
         """
         Checks if a given string is contained within the docstring, with \\b boundary delimiters
         """
@@ -74,7 +74,7 @@ class StringTesterMixin:
             # Missing type description
             return False
         # Only use the word boundary test for the parameter name, since e.g. `"a" in self.doc` is very likely to return True
-        return self._doc_contains(name)
+        return self._doc_bounded_contains(name)
     
     def has_returns(self, returns: str, type: str | None = None) -> bool:
         return "Returns" in self.doc and returns in self.doc and (type is None or type in self.doc)
