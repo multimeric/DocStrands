@@ -5,6 +5,8 @@ from typing_extensions import ParamSpec
 from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
 from copy import copy
 
+from docstrands.annotations import Description
+
 AnyFunc = Callable[..., Any]
 T = TypeVar("T", bound=AnyFunc)
 
@@ -150,13 +152,6 @@ class ParsedFunc(Generic[P, R]):
                 # args=["param", param_name] seems to be used by all DocstringParam
                 self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=None, arg_name=param_name, description=param_description, is_optional=False, default=None))
 
-
-@dataclass
-class Description:
-    """
-    Allows a description to be attached to any type annotation.
-    """
-    description: str
 
 def extract_description(typ: Any) -> str | None:
     if get_origin(typ) is Annotated:
