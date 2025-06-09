@@ -158,14 +158,11 @@ class ParsedFunc(Generic[P, R]):
             # TODO: Use self.func.__annotations__ to parse out the type without evaluating it
         except TypeError as e:
             raise TypeError(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
-        ret_type = signature.pop("return", None)
-        if ret_type is not None:
-            ret_description = extract_description(ret_type)
-            if ret_description is not None:
-                # Remove any existing return documentation
-                self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
-                # args=["returns"] seems to be used by all DocstringReturns
-                self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
+        if (ret_type := signature.pop("return", None)) is not None and (ret_description := extract_description(ret_type)) is not None:
+            # Remove any existing return documentation
+            self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
+            # args=["returns"] seems to be used by all DocstringReturns
+            self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
         for param_name, param_type in signature.items():
             param_description = extract_description(param_type)
             type_name = extract_typename(param_type)
