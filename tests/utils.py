@@ -24,14 +24,14 @@ class DocstringTester(ABC):
         self.style = style
 
     @abstractmethod
-    def has_parameter(self, name: str, description: str | None = None) -> bool:
+    def has_parameter(self, name: str, description: str | None = None, type: str | None = None) -> bool:
         """
-        Checks if the docstring has a parameter with the given name and (optionally) description.
+        Checks if the docstring has a parameter with the given name and (optionally) description and type.
         """
         pass
 
     @abstractmethod
-    def has_returns(self, returns: str) -> bool:
+    def has_returns(self, returns: str, type: str | None = None) -> bool:
         """
         Checks if the docstring has a return value with the given description.
         """
@@ -52,16 +52,19 @@ class DocstringTester(ABC):
         pass
 
 class StringTesterMixin:
+    # Note: currently assumes that all docstrings are Google style
     doc: str
 
-    def has_parameter(self, name: str, description: str | None = None) -> bool:
+    def has_parameter(self, name: str, description: str | None = None, type: str | None = None) -> bool:
         if description is None:
             return f"    {name}:" in self.doc
-        else:
+        elif type is None:
             return f"    {name}: {description}" in self.doc
+        else:
+            return f"    {name} ({type}): {description}" in self.doc
     
-    def has_returns(self, returns: str) -> bool:
-        return "Returns" in self.doc and returns in self.doc
+    def has_returns(self, returns: str, type: str | None = None) -> bool:
+        return "Returns" in self.doc and returns in self.doc and (type is None or type in self.doc)
 
     def has_synopsis(self, synopsis: str) -> bool:
         return synopsis in self.doc
@@ -106,17 +109,17 @@ class DocstringParserTester(DocstringTester):
         self.doc = docstring_parser.parse_from_object(obj, style=STYLE_MAP[style])
         super().__init__(obj, style)
 
-    def has_parameter(self, name: str, description: str | None = None) -> bool:
+    def has_parameter(self, name: str, description: str | None = None, type: str | None = None) -> bool:
         for param in self.doc.params:
             if param.arg_name == name:
-                if description is None:
-                    return True
-                else:
-                    return param.description == description
+                return all([
+                    description is None or param.description == description,
+                    type is None or param.type_name == type
+                ])
         return False
 
-    def has_returns(self, returns: str) -> bool:
-        return self.doc.returns is not None and self.doc.returns.description is not None and returns in self.doc.returns.description
+    def has_returns(self, returns: str, type: str | None = None) -> bool:
+        return self.doc.returns is not None and self.doc.returns.description is not None and returns in self.doc.returns.description and (type is None or self.doc.returns.type_name == type)
     
     def has_synopsis(self, synopsis: str) -> bool:
         return self.doc.short_description == synopsis
@@ -136,23 +139,22 @@ class GriffeTester(DocstringTester):
         self.doc = griffe.Docstring(obj.__doc__, parser=GRIFFE_STYLE_MAP[style])
         super().__init__(obj, style)
 
-    def has_parameter(self, name: str, description: str | None = None) -> bool:
+    def has_parameter(self, name: str, description: str | None = None, type: str | None = None) -> bool:
         for section in self.doc.parsed:
             if isinstance(section, griffe.DocstringSectionParameters):
                 for param in section.value:
                     if param.name == name:
-                        if description is None:
-                            return True
-                        else:
-                            return param.description == description
+                        return all([
+                            description is None or param.description == description,
+                            type is None or param.annotation == type
+                        ])
         return False
 
-    def has_returns(self, returns: str) -> bool:
+    def has_returns(self, returns: str, type: str | None = None) -> bool:
         for section in self.doc.parsed:
             if isinstance(section, griffe.DocstringSectionReturns):
                 for line in section.value:
-                    if line.description == returns:
-                        return True
+                    return line.description == returns and (type is None or line.value == type)
         return False
 
     def has_synopsis(self, synopsis: str) -> bool:

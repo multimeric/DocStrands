@@ -135,20 +135,21 @@ class ParsedFunc(Generic[P, R]):
         return decorator
 
     def apply_annotations(self) -> None:
-        signature = get_type_hints(self.func, include_extras=True)
-        ret_type = signature.pop("return", None)
-        if ret_type is not None:
-            ret_description = extract_description(ret_type)
-            if ret_description is not None:
-                # Remove any existing return documentation
-                self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
-                # args=["returns"] seems to be used by all DocstringReturns
-                self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=None, return_name=None, is_generator=False))
+        try:
+            signature = get_type_hints(self.func, include_extras=True)
+            # TODO: Use self.func.__annotations__ to parse out the type without evaluating it
+        except TypeError as e:
+            raise TypeError(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
+        if (ret_type := signature.pop("return", None)) is not None and (ret_description := extract_description(ret_type)) is not None:
+            # Remove any existing return documentation
+            self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
+            # args=["returns"] seems to be used by all DocstringReturns
+            self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
         for param_name, param_type in signature.items():
             param_description = extract_description(param_type)
             if param_description is not None:
                 # args=["param", param_name] seems to be used by all DocstringParam
-                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=None, arg_name=param_name, description=param_description, is_optional=False, default=None))
+                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=extract_typename(param_type), arg_name=param_name, description=param_description, is_optional=False, default=None))
 
 
 @dataclass
@@ -163,6 +164,16 @@ def extract_description(typ: Any) -> str | None:
         for annotation in get_args(typ):
             if isinstance(annotation, Description):
                 return annotation.description
+
+def extract_typename(type: Any) -> str:
+    """
+    Strips out any annotations, and returns the name of the type as a string
+    """
+    if get_origin(type) == Annotated:
+        # Strip away annotations
+        type = get_args(type)[0]
+    return getattr(type, "__name__", str(type))
+
 
 def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
     """
