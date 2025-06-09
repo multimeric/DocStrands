@@ -170,7 +170,7 @@ class ParsedFunc(Generic[P, R]):
             # The parameter we are describing via annotations might already exist in the docstring
             if (existing_param := get_param(self.docstring, param_name)) is None:
                 # If it doesn't exist, we create a new one
-                # args=["param", param_name] seems to the correct args for DocstringParam
+                # args=["param", param_name] seems to be the correct args for DocstringParam
                 self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=type_name, arg_name=param_name, description=param_description, is_optional=False, default=None))
             else:
                 # Update the type only if we had no existing description for it, 
