@@ -1,11 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass, replace
-from typing import Annotated, Callable, Literal, Any, Generic, TypeVar, get_args, get_origin, get_type_hints
+from typing import Callable, Literal, Any, Generic, TypeVar
 from typing_extensions import ParamSpec
-from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
+from docstring_parser import parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
+from docstrands.parser_utils import delete_param
 from copy import copy
+from docstrands.signature import docstring_from_signature
+from docstrands.merge import merge_docstrings
 
-from docstrands.annotations import Description, TypeDescription
 
 AnyFunc = Callable[..., Any]
 T = TypeVar("T", bound=AnyFunc)
@@ -33,20 +35,6 @@ STYLE_MAP: dict[DocstringStyle, StyleEnum] = {
     "auto": StyleEnum.AUTO,
 }
 
-def get_param(doc: Docstring, param_name: str) -> DocstringParam | None:
-    """
-    Returns an existing parameter definition
-    """
-    for param in doc.params:
-        if param_name == param.arg_name:
-            return param
-
-def delete_param(doc: Docstring, param_name: str):
-    """
-    Deletes any parameters with the given name
-    """
-    doc.meta = [meta for meta in doc.meta if not (isinstance(meta, DocstringParam) and meta.arg_name == param_name)]
-
 @dataclass
 class ParsedFunc(Generic[P, R]):
     """
@@ -59,6 +47,14 @@ class ParsedFunc(Generic[P, R]):
     "The original function."
     docstring: Docstring
     "The parsed docstring."
+
+    @classmethod
+    def parse(cls, func: Callable[P, R], style: DocstringStyle = "auto") -> ParsedFunc[P, R]:
+        _style = STYLE_MAP[style]
+        return cls(
+            func=func,
+            docstring=parse(func.__doc__ or "", style=_style)
+        )
 
     def __repr__(self) -> str:
         # This shows up in the help, where we want it to impersonate the original function
@@ -118,7 +114,7 @@ class ParsedFunc(Generic[P, R]):
             new_docstring.meta.append(self.docstring.returns)
             return ParsedFunc(
                 other.func,
-                new_docstring,
+                new_docstring
             )
         return decorator
 
@@ -133,7 +129,7 @@ class ParsedFunc(Generic[P, R]):
             new_docstring.short_description = self.docstring.short_description
             return ParsedFunc(
                 other.func,
-                new_docstring,
+                new_docstring
             )
         return decorator
 
@@ -148,58 +144,27 @@ class ParsedFunc(Generic[P, R]):
             new_docstring.long_description = self.docstring.long_description
             return ParsedFunc(
                 other.func,
-                new_docstring,
+                new_docstring
             )
         return decorator
 
     def apply_annotations(self) -> None:
-        try:
-            signature = get_type_hints(self.func, include_extras=True)
-            # TODO: Use self.func.__annotations__ to parse out the type without evaluating it
-        except TypeError as e:
-            raise TypeError(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
-        if (ret_type := signature.pop("return", None)) is not None and (ret_description := extract_description(ret_type)) is not None:
-            # Remove any existing return documentation
-            self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
-            # args=["returns"] seems to be used by all DocstringReturns
-            self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
-        for param_name, param_type in signature.items():
-            param_description = extract_description(param_type)
-            type_name = extract_typename(param_type)
+        pseudo_docstring = docstring_from_signature(self.func)
+        self.docstring = merge_docstrings(self.func, pseudo_docstring, self.docstring)
 
-            # The parameter we are describing via annotations might already exist in the docstring
-            if (existing_param := get_param(self.docstring, param_name)) is None:
-                # If it doesn't exist, we create a new one
-                # args=["param", param_name] seems to be the correct args for DocstringParam
-                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=type_name, arg_name=param_name, description=param_description, is_optional=False, default=None))
-            else:
-                # Update the type only if we had no existing description for it, 
-                # because what we `type_name` is not guaranteed to be informative
-                if existing_param.type_name is None:
-                    existing_param.type_name = type_name
-                # Update the description if we find any Description,
-                # this is likely to be more informative
-                if param_description is not None:
-                    existing_param.description = param_description
-
-
-def extract_description(typ: Any) -> str | None:
-    if get_origin(typ) is Annotated:
-        for annotation in get_args(typ):
-            if isinstance(annotation, Description):
-                return annotation.description
-
-def extract_typename(type: Any) -> str:
-    """
-    Strips out any annotations, and returns the name of the type as a string
-    """
-    if get_origin(type) == Annotated:
-        for annotation in get_args(type):
-            if isinstance(annotation, TypeDescription):
-                return annotation.description
-        # Strip away annotations
-        type = get_args(type)[0]
-    return getattr(type, "__name__", str(type))
+            # if (existing_param := get_param(self.docstring, param_name)) is None:
+            #     # If it doesn't exist, we create a new one
+            #     # args=["param", param_name] seems to be the correct args for DocstringParam
+            #     self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=type_name, arg_name=param_name, description=param_description, is_optional=False, default=None))
+            # else:
+            #     # Update the type only if we had no existing description for it, 
+            #     # because what we `type_name` is not guaranteed to be informative
+            #     if existing_param.type_name is None:
+            #         existing_param.type_name = type_name
+            #     # Update the description if we find any Description,
+            #     # this is likely to be more informative
+            #     if param_description is not None:
+            #         existing_param.description = param_description
 
 
 def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
@@ -214,7 +179,7 @@ def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[
         A decorator. When this is applied to a function this decorator will return a [`ParsedFunc`][docstrands.ParsedFunc] object.
     """
     def decorator(func: Callable[P, R]) -> ParsedFunc[P, R]:
-        ret: ParsedFunc[P, R] = ParsedFunc(func, parse(func.__doc__ or "", STYLE_MAP[style]))
+        ret: ParsedFunc[P, R] = ParsedFunc.parse(func, style)
         if use_annotations:
             ret.apply_annotations()
         return ret

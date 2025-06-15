@@ -88,3 +88,11 @@ def test_description(Tester: Type[DocTester]):
     tester = Tester(description_dest, "google")
     assert tester.has_synopsis("A synopsis only"), "Synopsis should not be affected"
     assert tester.has_description("Some more detail about the function.\nThis has several lines."), "Synopsis should not be affected"
+
+@each_tester
+def test_no_docstring(Tester: Type[DocTester]):
+    @docstring(style="google")
+    def no_docstring(a: int): pass
+
+    tester = Tester(no_docstring, "google")
+    assert tester.has_parameter("a", type="int"), "Even functions with no user-provided docstring should gain a skeleton docstring"

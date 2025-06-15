@@ -1,3 +1,5 @@
+# These tests also check that actual docstrings are not needed 
+# And that the docstring decorator works with annotations only
 from __future__ import annotations
 from typing import Annotated, Type
 from docstrands import Description, docstring, TypeDescription
