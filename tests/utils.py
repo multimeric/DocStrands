@@ -2,7 +2,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from io import StringIO
 from pydoc import Helper
-import sys
 import re
 
 import docstring_parser
@@ -15,10 +14,6 @@ GRIFFE_STYLE_MAP: dict[DocstringStyle, griffe.DocstringStyle] = {
     "numpydoc": "numpy",
     "rest": "sphinx",
 }
-
-at_least_310 = pytest.mark.skipif(
-    sys.version_info < (3, 10), reason="requires python3.10 or higher"
-)
 
 
 def strip_whitespace(string: str) -> str:

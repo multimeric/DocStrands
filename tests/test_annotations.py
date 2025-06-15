@@ -3,10 +3,9 @@
 from __future__ import annotations
 from typing import Annotated, Type
 from docstrands import Description, docstring, TypeDescription
-from tests.utils import DocTester, each_tester, at_least_310
+from tests.utils import DocTester, each_tester
 
 
-@at_least_310
 @each_tester
 def test_description(Tester: Type[DocTester]):
     @docstring(style="google", use_annotations=True)
@@ -25,7 +24,6 @@ def test_description(Tester: Type[DocTester]):
     assert tester.has_returns("The return value.")
 
 
-@at_least_310
 @each_tester
 def test_type_description(Tester: Type[DocTester]):
     @docstring(style="google", use_annotations=True)

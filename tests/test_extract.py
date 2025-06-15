@@ -1,10 +1,8 @@
 from docstrands.signature import parse_uneval_type
-from tests.utils import at_least_310
 import pytest
 import ast
 
 
-@at_least_310
 @pytest.mark.parametrize(
     "signature, expected_descr, expected_type",
     [
