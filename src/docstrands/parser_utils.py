@@ -1,6 +1,7 @@
 """
 Utility functions that apply to docstring_parser types
 """
+
 from docstring_parser import Docstring, DocstringParam
 
 
@@ -13,6 +14,7 @@ def find_param(doc: Docstring, param_name: str) -> int | None:
             return i
     return None
 
+
 def get_param(doc: Docstring, param_name: str) -> DocstringParam | None:
     """
     Returns an existing parameter definition
@@ -20,11 +22,17 @@ def get_param(doc: Docstring, param_name: str) -> DocstringParam | None:
     i = find_param(doc, param_name)
     return doc.params[i] if i is not None else None
 
+
 def delete_param(doc: Docstring, param_name: str):
     """
     Deletes any parameters with the given name
     """
-    doc.meta = [meta for meta in doc.meta if not (isinstance(meta, DocstringParam) and meta.arg_name == param_name)]
+    doc.meta = [
+        meta
+        for meta in doc.meta
+        if not (isinstance(meta, DocstringParam) and meta.arg_name == param_name)
+    ]
+
 
 def add_param(doc: Docstring, param: DocstringParam):
     """

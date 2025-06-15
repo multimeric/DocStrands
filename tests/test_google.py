@@ -2,6 +2,7 @@ from typing import Type
 from docstrands.parsed_func import docstring
 from tests.utils import each_tester, DocTester
 
+
 @docstring(style="google")
 def divide(a: int, b: int, *, floor: bool) -> float:
     """Divide two numbers.
@@ -15,6 +16,7 @@ def divide(a: int, b: int, *, floor: bool) -> float:
         The result of the division.
     """
     return a // b if floor else a / b
+
 
 @docstring(style="google")
 def source(a: int, b: int, *, c: bool) -> None:
@@ -33,6 +35,7 @@ def source(a: int, b: int, *, c: bool) -> None:
         The result
     """
 
+
 @source.copy_params("a", "b")
 @docstring(style="google")
 def param_dest(a: int, b: int, d: float):
@@ -44,6 +47,7 @@ def param_dest(a: int, b: int, d: float):
     """
     pass
 
+
 @source.copy_returns()
 @docstring(style="google")
 def return_dest(a: int, b: int):
@@ -52,10 +56,12 @@ def return_dest(a: int, b: int):
     """
     pass
 
+
 @source.copy_synopsis()
 @docstring(style="google")
 def synopsis_dest(a: int, b: int):
     pass
+
 
 @source.copy_description()
 @docstring(style="google")
@@ -63,6 +69,7 @@ def description_dest(a: int, b: int):
     """
     A synopsis only
     """
+
 
 @each_tester
 def test_params(Tester: Type[DocTester]):
@@ -72,27 +79,38 @@ def test_params(Tester: Type[DocTester]):
     assert not tester.has_parameter("c")
     assert tester.has_parameter("d", "A unique parameter")
 
+
 @each_tester
 def test_return(Tester: Type[DocTester]):
     tester = Tester(return_dest, "google")
-    assert tester.has_synopsis("Some other description"), "Synopsis should be unaffected"
+    assert tester.has_synopsis("Some other description"), (
+        "Synopsis should be unaffected"
+    )
     assert tester.has_returns("The result"), "Return documentation should be copied"
+
 
 @each_tester
 def test_synopsis(Tester: Type[DocTester]):
     tester = Tester(synopsis_dest, "google")
     assert tester.has_synopsis("Some description."), "Synopsis should be copied"
 
+
 @each_tester
 def test_description(Tester: Type[DocTester]):
     tester = Tester(description_dest, "google")
     assert tester.has_synopsis("A synopsis only"), "Synopsis should not be affected"
-    assert tester.has_description("Some more detail about the function.\nThis has several lines."), "Synopsis should not be affected"
+    assert tester.has_description(
+        "Some more detail about the function.\nThis has several lines."
+    ), "Synopsis should not be affected"
+
 
 @each_tester
 def test_no_docstring(Tester: Type[DocTester]):
     @docstring(style="google")
-    def no_docstring(a: int): pass
+    def no_docstring(a: int):
+        pass
 
     tester = Tester(no_docstring, "google")
-    assert tester.has_parameter("a", type="int"), "Even functions with no user-provided docstring should gain a skeleton docstring"
+    assert tester.has_parameter("a", type="int"), (
+        "Even functions with no user-provided docstring should gain a skeleton docstring"
+    )
