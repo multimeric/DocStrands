@@ -166,20 +166,6 @@ class ParsedFunc(Generic[P, R]):
         pseudo_docstring = docstring_from_signature(self.func)
         self.docstring = merge_docstrings(self.func, pseudo_docstring, self.docstring)
 
-        # if (existing_param := get_param(self.docstring, param_name)) is None:
-        #     # If it doesn't exist, we create a new one
-        #     # args=["param", param_name] seems to be the correct args for DocstringParam
-        #     self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=type_name, arg_name=param_name, description=param_description, is_optional=False, default=None))
-        # else:
-        #     # Update the type only if we had no existing description for it,
-        #     # because what we `type_name` is not guaranteed to be informative
-        #     if existing_param.type_name is None:
-        #         existing_param.type_name = type_name
-        #     # Update the description if we find any Description,
-        #     # this is likely to be more informative
-        #     if param_description is not None:
-        #         existing_param.description = param_description
-
 
 def docstring(
     style: DocstringStyle, use_annotations: bool = True
