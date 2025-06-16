@@ -9,7 +9,9 @@ def source(a: int, b: int, *, c: bool) -> None:
     Some more detail about the function.
     This has several lines.
 
-    :param a: Positional argument a
+    Parameters
+    ----------
+    a : Positional argument a
     :param b: Positional argument b
     :param c: Keyword-only argument c
     :returns: The result

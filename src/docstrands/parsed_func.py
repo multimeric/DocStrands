@@ -1,9 +1,20 @@
 from __future__ import annotations
 from dataclasses import dataclass, replace
-from typing import Annotated, Callable, Literal, Any, Generic, TypeVar, get_args, get_origin, get_type_hints
+from typing import Callable, Literal, Any, Generic, TypeVar
 from typing_extensions import ParamSpec
-from docstring_parser import DocstringParam, parse, DocstringStyle as StyleEnum, Docstring, compose, DocstringReturns, RenderingStyle
+from docstring_parser import (
+    parse,
+    DocstringStyle as StyleEnum,
+    Docstring,
+    compose,
+    DocstringReturns,
+    RenderingStyle,
+)
+from docstrands.parser_utils import delete_param
 from copy import copy
+from docstrands.signature import docstring_from_signature
+from docstrands.merge import merge_docstrings
+
 
 AnyFunc = Callable[..., Any]
 T = TypeVar("T", bound=AnyFunc)
@@ -31,6 +42,7 @@ STYLE_MAP: dict[DocstringStyle, StyleEnum] = {
     "auto": StyleEnum.AUTO,
 }
 
+
 @dataclass
 class ParsedFunc(Generic[P, R]):
     """
@@ -39,15 +51,23 @@ class ParsedFunc(Generic[P, R]):
     In general `ParsedFunc` impersonates the original function, so it can be used in most places where the original function would be used.
     A `ParsedFunc` should only ever be created by the `docstring` decorator.
     """
+
     func: AnyFunc
     "The original function."
     docstring: Docstring
     "The parsed docstring."
 
+    @classmethod
+    def parse(
+        cls, func: Callable[P, R], style: DocstringStyle = "auto"
+    ) -> ParsedFunc[P, R]:
+        _style = STYLE_MAP[style]
+        return cls(func=func, docstring=parse(func.__doc__ or "", style=_style))
+
     def __repr__(self) -> str:
         # This shows up in the help, where we want it to impersonate the original function
         return repr(self.func)
-    
+
     def __str__(self) -> str:
         # This shows up in the help, where we want it to impersonate the original function
         return str(self.func)
@@ -66,116 +86,86 @@ class ParsedFunc(Generic[P, R]):
         if self.docstring.style is None:
             return self.func.__doc__
         else:
-            return compose(self.docstring, self.docstring.style, rendering_style=RenderingStyle.CLEAN)
+            return compose(
+                self.docstring,
+                self.docstring.style,
+                rendering_style=RenderingStyle.CLEAN,
+            )
 
-    def copy_params(self, *params: str) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
+    def copy_params(
+        self, *params: str
+    ) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
         Copies parameter documentation from this function to the decorated function.
 
         Params:
             params: The names of the parameters to copy.
         """
+
         def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
             new_docstring = copy(other.docstring)
             for param in self.docstring.params:
                 if param.arg_name in params:
+                    # Delete any existing parameter descriptions with this name
+                    delete_param(new_docstring, param.arg_name)
                     new_docstring.meta.append(param)
-            return replace(
-                other,
-                docstring=new_docstring
-            )
+            return replace(other, docstring=new_docstring)
+
         return decorator
 
     def copy_returns(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
         Copies the return documentation from this function to the decorated function.
         """
+
         def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
             new_docstring = copy(other.docstring)
             if self.docstring.returns is None:
                 raise ValueError("No return documentation to copy.")
             # Remove any existing return documentation
-            new_docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), new_docstring.meta))
+            new_docstring.meta = [x for x in new_docstring.meta if not isinstance(x, DocstringReturns)]
             # Add the new return documentation
             new_docstring.meta.append(self.docstring.returns)
-            return ParsedFunc(
-                other.func,
-                new_docstring,
-            )
+            return ParsedFunc(other.func, new_docstring)
+
         return decorator
 
     def copy_synopsis(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
         Copies the synopsis (first line) from this function to the decorated function.
         """
+
         def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
             new_docstring = copy(other.docstring)
             if self.docstring.short_description is None:
                 raise ValueError("No synopsis to copy.")
             new_docstring.short_description = self.docstring.short_description
-            return ParsedFunc(
-                other.func,
-                new_docstring,
-            )
+            return ParsedFunc(other.func, new_docstring)
+
         return decorator
 
     def copy_description(self) -> Callable[[ParsedFunc[Q, S]], ParsedFunc[Q, S]]:
         """
         Copies the description (everything after the synopsis that isn't in a dedicated block) from this function to the decorated function.
         """
+
         def decorator(other: ParsedFunc[Q, S]) -> ParsedFunc[Q, S]:
             new_docstring = copy(other.docstring)
             if self.docstring.long_description is None:
                 raise ValueError("No description to copy.")
             new_docstring.long_description = self.docstring.long_description
-            return ParsedFunc(
-                other.func,
-                new_docstring,
-            )
+            return ParsedFunc(other.func, new_docstring)
+
         return decorator
 
     def apply_annotations(self) -> None:
-        try:
-            signature = get_type_hints(self.func, include_extras=True)
-            # TODO: Use self.func.__annotations__ to parse out the type without evaluating it
-        except TypeError as e:
-            raise TypeError(f"Error when evaluating the type signature for {self.func.__name__}. Consider using a newer Python version") from e
-        if (ret_type := signature.pop("return", None)) is not None and (ret_description := extract_description(ret_type)) is not None:
-            # Remove any existing return documentation
-            self.docstring.meta = list(filter(lambda x: not isinstance(x, DocstringReturns), self.docstring.meta))
-            # args=["returns"] seems to be used by all DocstringReturns
-            self.docstring.meta.append(DocstringReturns(args=["returns"], description=ret_description, type_name=extract_typename(ret_type), return_name=None, is_generator=False))
-        for param_name, param_type in signature.items():
-            param_description = extract_description(param_type)
-            if param_description is not None:
-                # args=["param", param_name] seems to be used by all DocstringParam
-                self.docstring.meta.append(DocstringParam(args=["param", param_name], type_name=extract_typename(param_type), arg_name=param_name, description=param_description, is_optional=False, default=None))
+        pseudo_docstring = docstring_from_signature(self.func)
+        self.docstring = merge_docstrings(self.func, pseudo_docstring, self.docstring)
 
 
-@dataclass
-class Description:
-    """
-    Allows a description to be attached to any type annotation.
-    """
-    description: str
-
-def extract_description(typ: Any) -> str | None:
-    if get_origin(typ) is Annotated:
-        for annotation in get_args(typ):
-            if isinstance(annotation, Description):
-                return annotation.description
-
-def extract_typename(type: Any) -> str:
-    """
-    Strips out any annotations, and returns the name of the type as a string
-    """
-    if get_origin(type) == Annotated:
-        # Strip away annotations
-        type = get_args(type)[0]
-    return getattr(type, "__name__", str(type))
-
-
-def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
+def docstring(
+    style: DocstringStyle, use_annotations: bool = True
+) -> Callable[[Callable[P, R]], ParsedFunc[P, R]]:
     """
     Parses the docstring of a function so that it can be manipulated.
 
@@ -186,10 +176,11 @@ def docstring(style: DocstringStyle, use_annotations: bool = True) -> Callable[[
     Returns:
         A decorator. When this is applied to a function this decorator will return a [`ParsedFunc`][docstrands.ParsedFunc] object.
     """
+
     def decorator(func: Callable[P, R]) -> ParsedFunc[P, R]:
-        ret: ParsedFunc[P, R] = ParsedFunc(func, parse(func.__doc__ or "", STYLE_MAP[style]))
+        ret: ParsedFunc[P, R] = ParsedFunc.parse(func, style)
         if use_annotations:
             ret.apply_annotations()
         return ret
-    return decorator
 
+    return decorator
