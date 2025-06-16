@@ -14,6 +14,7 @@ import ast
         ("Annotated[int, 'foo']", None, "int"),
         ("Annotated[int, Description('foo')]", "foo", "int"),
         ("Annotated[int, TypeDescription('foo')]", None, "foo"),
+        ("Annotated[int, TypeDescription('foo'), Description('bar')]", "bar", "foo"),
     ],
 )
 def test_extract_typename(
