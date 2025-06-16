@@ -95,14 +95,16 @@ def docstring_from_signature(func: Callable[..., Any]) -> Docstring:
         )
 
     ret_description, ret_type = parse_uneval_type(parsed.returns)
-    doc.meta.append(
-        DocstringReturns(
-            type_name=ret_type,
-            description=ret_description,
-            is_generator=inspect.isgeneratorfunction(func),
-            return_name=None,
-            args=[],
+    if ret_type is not None or ret_description is not None:
+        # Adding a completely empty DocstringReturns is not useful
+        doc.meta.append(
+            DocstringReturns(
+                type_name=ret_type,
+                description=ret_description,
+                is_generator=inspect.isgeneratorfunction(func),
+                return_name=None,
+                args=[],
+            )
         )
-    )
 
     return doc

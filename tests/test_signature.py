@@ -35,3 +35,14 @@ def test_signature():
     assert doc.returns.type_name == "nothing"
     assert doc.returns.is_generator is False
     assert doc.returns.return_name is None
+
+def test_no_return():
+    """
+    Tests that a function with no return type annotation will not get a returns section.
+    """
+    def example(
+        a: Annotated[int, TypeDescription("integer")],
+    ): pass
+
+    doc = docstring_from_signature(example)
+    assert doc.returns is None
