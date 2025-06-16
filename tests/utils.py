@@ -140,11 +140,9 @@ class DocstringParserTester(DocstringTester):
     ) -> bool:
         for param in self.doc.params:
             if param.arg_name == name:
-                return all(
-                    [
-                        description is None or param.description == description,
-                        type is None or param.type_name == type,
-                    ]
+                return (
+                    (description is None or param.description == description) and
+                    (type is None or param.type_name == type)
                 )
         return False
 
