@@ -123,11 +123,7 @@ class ParsedFunc(Generic[P, R]):
             if self.docstring.returns is None:
                 raise ValueError("No return documentation to copy.")
             # Remove any existing return documentation
-            new_docstring.meta = list(
-                filter(
-                    lambda x: not isinstance(x, DocstringReturns), new_docstring.meta
-                )
-            )
+            new_docstring.meta = [x for x in new_docstring.meta if not isinstance(x, DocstringReturns)]
             # Add the new return documentation
             new_docstring.meta.append(self.docstring.returns)
             return ParsedFunc(other.func, new_docstring)
